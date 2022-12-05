@@ -40,7 +40,7 @@ In case the Elves get hungry and need extra snacks, they need to know which Elf 
 Find the Elf carrying the most Calories. How many total Calories is that Elf carrying?
  """
 
-with open('Day 1 - Puzzle Input.txt') as f:
+with open('Day 1 - input.txt') as f:
     lines = f.readlines()
 
 elves = []
@@ -68,5 +68,5 @@ In the example above, the top three Elves are the fourth Elf (with 24000 Calorie
 Find the top three Elves carrying the most Calories. How many Calories are those Elves carrying in total? """
 
 elves.sort()
-print(elves[-1] + elves[-2] + elves[-3]) # Ans: 207968
+print(sum(elves[-3:])) # Ans: 207968
 
