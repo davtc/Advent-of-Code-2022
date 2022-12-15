@@ -32,7 +32,6 @@ $ ls
 8033020 d.log
 5626152 d.ext
 7214296 k
-
 The filesystem consists of a tree of files (plain data) and directories (which can contain other directories or files). The outermost directory is called /. You can navigate around the filesystem, moving into or out of directories and listing the contents of the directory you're currently in.
 
 Within the terminal output, lines that begin with $ are commands you executed, very much like some modern computers:
@@ -60,7 +59,6 @@ Given the commands and output in the example above, you can determine that the f
     - d.log (file, size=8033020)
     - d.ext (file, size=5626152)
     - k (file, size=7214296)
-
 Here, there are four directories: / (the outermost directory), a and d (which are in /), and e (which is in a). These directories also contain files of various sizes.
 
 Since the disk is full, your first step should probably be to find directories that are good candidates for deletion. To do this, you need to determine the total size of each directory. The total size of a directory is the sum of the sizes of the files it contains, directly or indirectly. (Directories themselves do not count as having any intrinsic size.)
@@ -79,62 +77,75 @@ with open('Day 7 - input.txt') as f:
     lines = f.readlines()
 
 folder = {}
-file = {}
-
-current_dir = ''
+folder_size = {}
+path = []
 start_ls = False
+
+def getPath(path):
+  return '/'.join(path)
 
 for line in lines:
   split = line.split(' ')
-  if split[0] == '$' and split[1] == 'cd':
-    start_ls = False
-    current_dir = split[2][:-1]
-  if split[0] == '$' and split[1] == 'ls\n':
+  if split[1] == 'cd':
+    if start_ls:
+      start_ls = False
+      folder[getPath(path)] = (dir_list, total_size)
+    if split[2] == '..\n':
+      path.pop()
+    else:
+      path.append(split[2][:-1])
+  elif split[0] == '$' and split[1] == 'ls\n':
     start_ls = True
-    folder[current_dir] = []
-    continue
-  if start_ls:
+    dir_list = []
+    total_size = 0
+  elif start_ls:
     if split[0] == 'dir':
-      folder[current_dir].append((split[1][:-1],'d'))
+      dir_list.append(getPath(path + [split[1][:-1]]))
     else:
-      folder[current_dir].append(split[1][:-1])
-  #if split[0] == 'dir':
-  # folder[split[0]] == split[1]
-  # Get size of all files in a dictionary
-  if split[0].isdigit():
-    file[split[1][:-1]] = int(split[0])
+      total_size += int(split[0])
+folder[getPath(path)] = (dir_list, total_size) # Add the last directory to the folder dictionary.
 
-for key, contents in folder.items():
-  dirs = []
-  size = 0
-  for c in contents:
-    if type(c) is tuple:
-      dirs.append(c[0])
-    else:
-      size += file[c]
-    folder[key] = (dirs, size)
+# Recursive function to find the size of each folder.
+def findFolderSize(name):
+  if folder[name][0] == []:
+    return folder[name][1]
+  else:
+    return sum([findFolderSize(fol) for fol in folder[name][0]]) + folder[name][1]
 
-def getNestedDirCount(f):
-  counter = 0
-  for key, val in f.items():
-    counter += len(val[0])
-    return counter
+for key in folder.keys():
+  folder_size[key] = findFolderSize(key)
 
-while getNestedDirCount(folder) > 0:
-  for fol, content in folder.items():
-    if len(content[0]) > 0:
-      dirs = []
-      dir_size = 0
-      for d in content[0]:
-        dirs += folder[d][0]
-        dir_size += folder[d][1]
-      folder[fol] = (dirs, content[1] + dir_size)
+total_size_under_100k = 0
+for key, size in folder_size.items():
+  if size <= 100000:
+    total_size_under_100k += size
 
-size_under_100k = []
+print(total_size_under_100k) # Ans: 1915606
 
-for key, val in folder.items():
-  folder[key] = val[1]
-  if val[1] <= 100000:
-    size_under_100k.append(val[1])
+""" Now, you're ready to choose a directory to delete.
 
-print(size_under_100k)
+The total disk space available to the filesystem is 70000000. To run the update, you need unused space of at least 30000000. You need to find a directory you can delete that will free up enough space to run the update.
+
+In the example above, the total size of the outermost directory (and thus the total amount of used space) is 48381165; this means that the size of the unused space must currently be 21618835, which isn't quite the 30000000 required by the update. Therefore, the update still requires a directory with total size of at least 8381165 to be deleted before it can run.
+
+To achieve this, you have the following options:
+
+Delete directory e, which would increase unused space by 584.
+Delete directory a, which would increase unused space by 94853.
+Delete directory d, which would increase unused space by 24933642.
+Delete directory /, which would increase unused space by 48381165.
+Directories e and a are both too small; deleting them would not free up enough space. However, directories d and / are both big enough! Between these, choose the smallest: d, increasing unused space by 24933642.
+
+Find the smallest directory that, if deleted, would free up enough space on the filesystem to run the update. What is the total size of that directory? """
+
+total_space = 70000000
+used_space = folder_size['/']
+req_space = 30000000
+delete_space = req_space - (total_space - used_space)
+
+smallest_size = float('inf')
+for key, val in folder_size.items():
+  if val > delete_space:
+    smallest_size = min(smallest_size, val);
+
+print(smallest_size) # Ans 5025657
