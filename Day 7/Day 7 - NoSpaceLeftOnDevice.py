@@ -82,7 +82,7 @@ path = []
 start_ls = False
 
 def getPath(path):
-  return '/'.join(path)
+  return path[0] + '/'.join(path[1:])
 
 for line in lines:
   split = line.split(' ')
