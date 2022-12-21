@@ -141,6 +141,7 @@ Afterward, locate the divider packets. To find the decoder key for this distress
 Organize all of the packets into the correct order. What is the decoder key for the distress signal? """
 
 import json
+from functools import cmp_to_key
 
 def parse():
     with open('Day 13 - input.txt') as f:
@@ -148,61 +149,72 @@ def parse():
 
         left_packets = [json.loads(lines[i]) for i in range(0, len(lines), 3)]
         right_packets = [json.loads(lines[i]) for i in range(1, len(lines), 3)]
+        all_packets = [json.loads(lines[i]) for i in range(len(lines)) if i % 3 != 2]
+        all_packets.append([2])
+        all_packets.append([6])
+        all_packets = sorted(all_packets, key=cmp_to_key(compare_order))
+        return left_packets, right_packets, all_packets
 
-        return left_packets, right_packets
-
+""" def compare_order(left, right):
+  if left == []:
+    if right == []:
+      return 0
+    else:
+      return -1
+  elif right == []: """
 def compare_order(left, right):
     counter = 0
-    
     while counter < len(left):
         # Right side ran out of items
         if counter >= len(right):
-            return False
+            return 1
         # Left side ran out of items
         elif left[counter] == [] and right[counter] != []:
-            return True
+            return -1
         # Right side ran out of items
         elif left[counter] != [] and right[counter] == []:
-            return False
+            return 1
         else:
             if type(left[counter]) is list and type(right[counter]) is list:
                 if left[counter] != [] and right[counter] != []:
-                    if not compare_order(left[counter], right[counter]):
-                        return False
+                    if compare_order(left[counter], right[counter]) == 1:
+                        return 1
                     else:
-                        return True
+                        return -1
             elif type(left[counter]) is list:
-                if not compare_order(left[counter], [right[counter]]):
-                    return False
+                if compare_order(left[counter], [right[counter]]) == 1:
+                    return 1
                 else:
-                    return True
+                    return -1
             elif type(right[counter]) is list:
-                if not compare_order([left[counter]], right[counter]):
-                    return False
+                if compare_order([left[counter]], right[counter]) == 1:
+                    return 1
                 else:
-                    return True
+                    return -1
             else:
                 if left[counter] < right[counter]:
-                    return True
+                    return -1
                 elif left[counter] > right[counter]:
-                    return False
+                    return 1
         
         counter += 1
-    return True
+    return -1
 
 def get_ordered_pairs(left_packets, right_packets):
     counter = 1
     ordered_pairs = []
     for left, right in zip(left_packets, right_packets):
-        if compare_order(left, right):
+        order = compare_order(left, right)
+        if order == -1:
             ordered_pairs.append(counter)
         counter += 1
             
     return ordered_pairs
 
 def main():
-    left_packets, right_packets = parse()
-    print(sum(get_ordered_pairs(left_packets, right_packets))) # Ans: 6369
+    left_packets, right_packets, all_packets = parse()
+    print(sum(get_ordered_pairs(left_packets, right_packets))) # Part 1 Ans: 6369
+    print((all_packets.index([2]) + 1) * (all_packets.index([6]) + 1)) # Part 2 Ans: 25800
 
 if __name__ == '__main__':
     main()
