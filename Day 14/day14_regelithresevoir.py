@@ -215,6 +215,18 @@ def scan_cave(x_range, y_range, min_x, sand, rocks):
             scan[y, x] = '#'
     return scan
 
+def add_floor(scan, x_range):
+    floor = np.array([['.'] * (x_range + 1), ['#'] * (x_range + 1)])
+    return np.vstack((scan, floor))
+
+def add_left(scan, y_range):
+    left = np.array(['.'] * (y_range + 1) + ['.', '#'])
+    return np.hstack((left.reshape((-1, 1)), scan))\
+
+def add_right(scan, y_range):
+    right = np.array(['.'] * (y_range + 1) + ['.', '#'])
+    return np.hstack((scan, right.reshape((-1, 1))))
+
 def check_south(scan, point):
     if point[0] + 1 <  len(scan[:, 1]):
         return scan[point[0]+1, point[1]]
@@ -250,38 +262,64 @@ def simulate_sand(scan, sand):
                     current_point = (current_point[0]+1, current_point[1]+1)
                 elif lower_right == -1:
                     stop = True
-                else:
-                    scan[current_point] = 'o'
-                    current_point = sand
             elif lower_left == '.':
                 current_point = (current_point[0]+1, current_point[1]-1)
             elif lower_left == -1:
                 stop = True
-            else:
-                scan[current_point] = 'o'
-                current_point = sand
         elif south == '.':
             current_point = (current_point[0]+1, current_point[1])
         elif south == -1:
             stop = True   
-        else:
-            scan[current_point] = 'o'
-            current_point = sand
+    return scan
+
+def simulate_sand2(scan, sand, y_range):
+    current_point = sand
+    while scan[sand] == '+':
+        # Go downwards
+        south = check_south(scan, current_point)
+        lower_left = check_lower_left(scan, current_point)
+        lower_right = check_lower_right(scan, current_point)
+        if south == '#' or south == 'o':
+            if lower_left == '#' or lower_left == 'o':
+                if lower_right == '#' or lower_right == 'o':
+                    scan[current_point] = 'o'
+                    current_point = sand
+                elif lower_right == '.':
+                    current_point = (current_point[0]+1, current_point[1]+1)
+                elif lower_right == -1:
+                    scan = add_right(scan, y_range)
+                    current_point = sand
+            elif lower_left == '.':
+                current_point = (current_point[0]+1, current_point[1]-1)
+            elif lower_left == -1:
+                scan = add_left(scan, y_range)
+                sand = (sand[0], sand[1] + 1)
+                current_point = sand
+        elif south == '.':
+            current_point = (current_point[0]+1, current_point[1])
     return scan
 
 def print_scan(scan):
     str = ''
     for i in range(len(scan[:,1])):
-        str += ''.join(scan[i,:]) + '\n'
+        str += ' '.join(scan[i,:]) + '\n'
     print(str)
 
-def main():
+def main1():
     x_range, y_range, min_x, sand, rocks = parse()
     rocks = connect_rocks(rocks)
     scan = scan_cave(x_range, y_range, min_x, sand, rocks)
     scan = simulate_sand(scan, sand)
-    print_scan(scan)
     print(np.count_nonzero(scan == 'o')) # Part 1 Ans: 832
 
+def main2():
+    x_range, y_range, min_x, sand, rocks = parse()
+    rocks = connect_rocks(rocks)
+    scan = scan_cave(x_range, y_range, min_x, sand, rocks)
+    scan = add_floor(scan, x_range)
+    scan = simulate_sand2(scan, sand, y_range)
+    print(np.count_nonzero(scan == 'o')) # Part 2 Ans: 27601
+
 if __name__ == '__main__':
-    main()
+    main1()
+    main2()
