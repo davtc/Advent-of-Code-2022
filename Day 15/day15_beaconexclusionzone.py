@@ -115,42 +115,80 @@ def parse():
 def manhattan_distance(start, end):
     return abs(end[0] - start[0]) + abs(end[1] - start[1])
 
-def init_map(sensors):
-    min_x = float('inf')
-    max_x = 0
-    min_y = float('inf')
-    max_y = 0
+def init_row(sensors):
+    x_min = float('inf')
+    x_max = 0
+    y_min = float('inf')
+    y_max = 0
 
     for sensor, beacon in sensors.items():
         distance = manhattan_distance(sensor, beacon)
-        min_x = min(min_x, sensor[0] - distance)
-        max_x = max(max_x, sensor[0] + distance)
-        min_y = min(min_y, sensor[1] - distance)
-        max_y = max(max_y, sensor[1] + distance)
+        x_min = min(x_min, sensor[0] - distance)
+        x_max = max(x_max, sensor[0] + distance)
+        y_min = min(y_min, sensor[1] - distance)
+        y_max = max(y_max, sensor[1] + distance)
 
-    map = np.array([['.'] * (max_x - min_x)] * (max_y - min_y))
+    row = ['.'] * (x_max - x_min)
 
-    return map, min_x, min_y
+    return row, x_max - x_min, x_min, y_min
 
-def no_beacon(sensors, y):
-    return
+def in_range(sensor, beacon, point):
+    if manhattan_distance(sensor, point) <= manhattan_distance(sensor, beacon):
+        return True
+    else:
+        return False
 
-def print_map(map):
-    str = ''
-    for i in range(len(map[:, 1])):
-        str += ('').join(map[i, :]) + '\n'
+def no_beacon(row, sensors, x_range, x_min, y):
+    start = []
+    end = []
+    for sensor, beacon in sensors.items():
+        if sensor[1] == y:
+            row[sensor[0] + abs(x_min)] = 'S'
+        if beacon[1] == y:
+            row[beacon[0] + abs(x_min)] = 'B'
+        
+        distance = manhattan_distance(sensor, beacon)
+        if abs(y - sensor[1]) <= distance:
+            remaining_distance = distance - abs(y - sensor[1])
+            start.append(sensor[0] - remaining_distance)
+            end.append(sensor[0] + remaining_distance)
 
-    print(str)
+    start.sort()
+    end.sort()
+    open = 0
+    s = 0
+    e = 0
+    for i in range(len(row)):
+        x = i + x_min
+        while s < len(start) and x == start[s]:
+            s += 1
+            open += 1
+        if open > 0 and row[i] == '.':
+            row[i] = '#'
+        while e < len(end) and x == end[e]:
+            e += 1
+            open -=1
 
-def print_row(map, row):
-    print(('').join(map[row, :]))
+    return row
+
+def print_row(row, x_min):
+    for n, char in zip(range(x_min, x_min + len(row)), row):
+        print(str(n) + ' ' + char)
+
+def n_pos_no_beacon(row):
+    row = [char for char in row if char != '.']
+    row = [char for char in row if char != 'B']
+    row = [char for char in row if char != 'S']
+    return len(row)
 
 def main():
     sensors = parse()
-    map, min_x, min_y = init_map(sensors)
-    print(min_y)
+    row, x_range, x_min, y_min = init_row(sensors)
     # print_map(map)
-    print_row(map, 10 + abs(min_y))
+    # print_row(map[10 + abs(y_min), :], x_min)
+    row = no_beacon(row, sensors, x_range, x_min, 2000000)
+    # print_row(row, x_min)
+    print(n_pos_no_beacon(row)) # Part 1 Ans: 5127797
 
 if __name__ == '__main__':
     main()
